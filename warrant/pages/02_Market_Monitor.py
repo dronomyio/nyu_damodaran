@@ -16,6 +16,19 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Check for Streamlit's query parameters
+query_params = st.query_params
+    
+# If this is the initial load with the 'Page not found' error
+if '_' in query_params:
+    # Create a loading spinner that automatically disappears
+    with st.spinner("Loading Market Monitor..."):
+        # Sleep for a very short time
+        time.sleep(0.1)
+        
+    # This prevents the "Page not found" message from appearing
+    st.query_params.clear()
+
 # Add custom CSS
 st.markdown("""
 <style>
@@ -212,8 +225,15 @@ def get_top_movers():
 
 # Main function for market monitor page
 def market_monitor():
-    st.markdown('<p class="main-header">Market Monitor</p>', unsafe_allow_html=True)
-    st.markdown('<p class="info-text">Real-time market data and analysis for financial decision-making.</p>', unsafe_allow_html=True)
+    # Add a row with a back button and the title
+    col1, col2, col3 = st.columns([1, 10, 1])
+    
+    with col1:
+        st.markdown('<a href="http://localhost/" target="_self"><button style="background-color: #f0f2f6; border: none; border-radius: 4px; padding: 8px 16px; font-size: 14px; cursor: pointer;">← Home</button></a>', unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown('<p class="main-header" style="text-align: center;">Market Monitor</p>', unsafe_allow_html=True)
+        st.markdown('<p class="info-text" style="text-align: center;">Real-time market data and analysis for financial decision-making.</p>', unsafe_allow_html=True)
     
     # Get current timestamp
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -649,12 +669,15 @@ def market_monitor():
                     st.plotly_chart(fig, use_container_width=True)
                     
                     # Create a scatter plot of return vs volatility
+                    # Create a size column that's the negative of Max Drawdown
+                    vol_df['Size'] = vol_df['Max Drawdown (%)'].abs()  # Using absolute value as the size
+                    
                     fig = px.scatter(
                         vol_df,
                         x='Volatility (%)',
                         y='Ann. Return (%)',
                         color='Sharpe Ratio',
-                        size='Max Drawdown (%)' * -1,  # Negative so larger drawdowns have smaller bubbles
+                        size='Size',  # Use the new Size column
                         hover_data=['Symbol', 'Name', 'Sharpe Ratio', 'Max Drawdown (%)'],
                         title=f"Risk-Return Analysis ({vol_period})",
                         labels={

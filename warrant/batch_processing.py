@@ -11,8 +11,15 @@ def batch_page():
     """
     Batch processing page for analyzing multiple warrants simultaneously.
     """
-    st.markdown('<p class="main-header">Batch Warrant Analysis</p>', unsafe_allow_html=True)
-    st.markdown('<p class="info-text">Analyze multiple warrants simultaneously for portfolio management or comparative analysis.</p>', unsafe_allow_html=True)
+    # Add a row with a back button and the title
+    col1, col2, col3 = st.columns([1, 10, 1])
+    
+    with col1:
+        st.markdown('<a href="http://localhost/" target="_self"><button style="background-color: #f0f2f6; border: none; border-radius: 4px; padding: 8px 16px; font-size: 14px; cursor: pointer;">← Home</button></a>', unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown('<p class="main-header" style="text-align: center;">Batch Warrant Analysis</p>', unsafe_allow_html=True)
+        st.markdown('<p class="info-text" style="text-align: center;">Analyze multiple warrants simultaneously for portfolio management or comparative analysis.</p>', unsafe_allow_html=True)
     
     # Create tabs for different batch processing methods
     tab1, tab2 = st.tabs(["Manual Entry", "File Upload"])

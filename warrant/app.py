@@ -17,6 +17,19 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Check for Streamlit's query parameters
+query_params = st.query_params
+    
+# If this is the initial load with the 'Page not found' error
+if '_' in query_params:
+    # Create a loading spinner that automatically disappears
+    with st.spinner("Loading Warrant Pricing Calculator..."):
+        # Sleep for a very short time
+        time.sleep(0.1)
+        
+    # This prevents the "Page not found" message from appearing
+    st.query_params.clear()
+
 # Add custom CSS
 st.markdown("""
 <style>
@@ -119,8 +132,15 @@ def get_risk_free_rate():
 
 # Main application
 def main():
-    st.markdown('<p class="main-header">Warrant Pricing Calculator</p>', unsafe_allow_html=True)
-    st.markdown('<p class="info-text">A financial tool for calculating warrant prices and Greeks using the Black-Scholes model with dilution adjustment.</p>', unsafe_allow_html=True)
+    # Add a row with a back button and the title
+    col1, col2, col3 = st.columns([1, 10, 1])
+    
+    with col1:
+        st.markdown('<a href="http://localhost/" target="_self"><button style="background-color: #f0f2f6; border: none; border-radius: 4px; padding: 8px 16px; font-size: 14px; cursor: pointer;">← Home</button></a>', unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown('<p class="main-header" style="text-align: center;">Warrant Pricing Calculator</p>', unsafe_allow_html=True)
+        st.markdown('<p class="info-text" style="text-align: center;">A financial tool for calculating warrant prices and Greeks using the Black-Scholes model with dilution adjustment.</p>', unsafe_allow_html=True)
     
     # Create sidebar for inputs
     with st.sidebar:

@@ -9,6 +9,19 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Check for Streamlit's query parameters
+query_params = st.query_params
+    
+# If this is the initial load with the 'Page not found' error
+if '_' in query_params:
+    # Create a loading spinner that automatically disappears
+    with st.spinner("Loading Batch Warrant Analysis..."):
+        # Sleep for a very short time
+        time.sleep(0.1)
+        
+    # This prevents the "Page not found" message from appearing
+    st.query_params.clear()
+
 # Add custom CSS
 st.markdown("""
 <style>

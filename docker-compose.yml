@@ -10,6 +10,8 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - ./index.html:/usr/share/nginx/html/index.html
+      - ./warrant/static:/usr/share/nginx/html/warrant/static
+      - ./optlt/static:/usr/share/nginx/html/optlt/static
     depends_on:
       - optlt-web
       - warrant-app
@@ -25,6 +27,7 @@ services:
       - "5000"
     environment:
       - FLASK_ENV=production
+      - FLASK_DEBUG=0
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
@@ -33,6 +36,20 @@ services:
     volumes:
       - ./optlt:/app
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   # Redis for OPTLT app
   redis:
@@ -64,22 +81,33 @@ services:
   # Warrant Pricing App
   warrant-app:
     build:
-      context: ./warrent
+      context: ./warrant
       dockerfile: Dockerfile
     container_name: warrant-app
     expose:
       - "8501"
     volumes:
-      - ./warrent:/app
+      - ./warrant:/app
     restart: unless-stopped
     environment:
       - PYTHONUNBUFFERED=1
+      - STREAMLIT_SERVER_MAX_UPLOAD_SIZE=10
+      - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+      - STREAMLIT_SERVER_ENABLE_STATIC_SERVING=true
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8501"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8501/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
 volumes:
   redis_data:

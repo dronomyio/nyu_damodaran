@@ -43,6 +43,7 @@ def calculate_option_batch(params_list):
     return results
 
 @app.route('/')
+@app.route('/app.py')  # Add this route to handle direct access to app.py
 def index():
     return render_template('index.html')
 
