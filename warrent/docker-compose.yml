@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  warrant-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: warrant-pricing-app
+    container_name: warrant-pricing-app
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s

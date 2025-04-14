@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Long-Term Option Pricing</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 20px;
+            padding-bottom: 40px;
+        }
+        .result-card {
+            margin-top: 20px;
+            display: none;
+        }
+        .greek-value {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">Long-Term Option Pricing Calculator</h1>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="manual-tab" data-bs-toggle="tab" href="#manual">Manual Entry</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="market-tab" data-bs-toggle="tab" href="#market">Market Data</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content">
+                            <div class="tab-pane fade show active" id="manual">
+                                <form id="option-form">
+                                    <div class="mb-3">
+                                        <label for="stock-price" class="form-label">Stock Price ($)</label>
+                                        <input type="number" class="form-control" id="stock-price" value="500" step="0.01" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="strike-price" class="form-label">Strike Price ($)</label>
+                                        <input type="number" class="form-control" id="strike-price" value="600" step="0.01" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="expiration-years" class="form-label">Years to Expiration</label>
+                                        <input type="number" class="form-control" id="expiration-years" value="15" step="0.01" min="0.01" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="risk-free-rate" class="form-label">Risk-Free Rate (%)</label>
+                                        <input type="number" class="form-control" id="risk-free-rate" value="5" step="0.01" min="0" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="volatility" class="form-label">Volatility (%)</label>
+                                        <input type="number" class="form-control" id="volatility" value="50" step="0.01" min="0.01" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="dividend-yield" class="form-label">Dividend Yield (%)</label>
+                                        <input type="number" class="form-control" id="dividend-yield" value="0" step="0.01" min="0">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-100">Calculate Option Prices</button>
+                                </form>
+                            </div>
+                            <div class="tab-pane fade" id="market">
+                                <form id="market-form">
+                                    <div class="mb-3">
+                                        <label for="symbol" class="form-label">Stock Symbol</label>
+                                        <input type="text" class="form-control" id="symbol" placeholder="AAPL" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="market-strike" class="form-label">Strike Price ($)</label>
+                                        <input type="number" class="form-control" id="market-strike" step="0.01" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="market-expiration" class="form-label">Years to Expiration</label>
+                                        <input type="number" class="form-control" id="market-expiration" value="1" step="0.01" min="0.01" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="market-rfr" class="form-label">Risk-Free Rate (%)</label>
+                                        <input type="number" class="form-control" id="market-rfr" value="5" step="0.01" min="0" required>
+                                    </div>
+                                    <button type="button" id="fetch-data" class="btn btn-info mb-3 w-100">Fetch Market Data</button>
+                                    <div id="market-data-result" class="alert alert-info" style="display: none;"></div>
+                                    <button type="submit" class="btn btn-primary w-100">Calculate with Market Data</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card result-card" id="result-card">
+                    <div class="card-header">
+                        <h5>Option Pricing Results</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-primary text-white">
+                                        Call Option
+                                    </div>
+                                    <div class="card-body">
+                                        <h3 id="call-price">$0.00</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-danger text-white">
+                                        Put Option
+                                    </div>
+                                    <div class="card-body">
+                                        <h3 id="put-price">$0.00</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <h5 class="mt-4">Greeks:</h5>
+                        <div class="row">
+                            <div class="col-6 col-md-4">
+                                <p>Delta: <span id="delta" class="greek-value">0.00</span></p>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <p>Gamma: <span id="gamma" class="greek-value">0.00</span></p>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <p>Theta: <span id="theta" class="greek-value">0.00</span></p>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <p>Vega: <span id="vega" class="greek-value">0.00</span></p>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <p>Rho: <span id="rho" class="greek-value">0.00</span></p>
+                            </div>
+                        </div>
+                        
+                        <h5 class="mt-4">Model Parameters:</h5>
+                        <div class="row">
+                            <div class="col-6">
+                                <p>d1: <span id="d1-value">0.00</span></p>
+                            </div>
+                            <div class="col-6">
+                                <p>N(d1): <span id="nd1-value">0.00</span></p>
+                            </div>
+                            <div class="col-6">
+                                <p>d2: <span id="d2-value">0.00</span></p>
+                            </div>
+                            <div class="col-6">
+                                <p>N(d2): <span id="nd2-value">0.00</span></p>
+                            </div>
+                        </div>
+                        
+                        <p class="mt-3 text-muted small">Last calculated: <span id="timestamp"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Manual option form
+            document.getElementById('option-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const stockPrice = parseFloat(document.getElementById('stock-price').value);
+                const strikePrice = parseFloat(document.getElementById('strike-price').value);
+                const yearsToExpiration = parseFloat(document.getElementById('expiration-years').value);
+                const riskFreeRate = parseFloat(document.getElementById('risk-free-rate').value) / 100;
+                const volatility = parseFloat(document.getElementById('volatility').value) / 100;
+                const dividendYield = parseFloat(document.getElementById('dividend-yield').value) / 100;
+                
+                calculateOption(stockPrice, strikePrice, yearsToExpiration, riskFreeRate, volatility, dividendYield);
+            });
+            
+            // Market data form
+            document.getElementById('fetch-data').addEventListener('click', function() {
+                const symbol = document.getElementById('symbol').value;
+                if (!symbol) {
+                    alert('Please enter a stock symbol');
+                    return;
+                }
+                
+                fetchMarketData(symbol);
+            });
+            
+            document.getElementById('market-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const marketDataResult = document.getElementById('market-data-result');
+                if (marketDataResult.style.display === 'none') {
+                    alert('Please fetch market data first');
+                    return;
+                }
+                
+                const stockPrice = window.lastStockPrice;
+                const strikePrice = parseFloat(document.getElementById('market-strike').value);
+                const yearsToExpiration = parseFloat(document.getElementById('market-expiration').value);
+                const riskFreeRate = parseFloat(document.getElementById('market-rfr').value) / 100;
+                const volatility = window.lastVolatility;
+                const dividendYield = window.lastDividendYield;
+                
+                calculateOption(stockPrice, strikePrice, yearsToExpiration, riskFreeRate, volatility, dividendYield);
+            });
+        });
+        
+        function fetchMarketData(symbol) {
+            const marketDataResult = document.getElementById('market-data-result');
+            marketDataResult.textContent = 'Fetching data...';
+            marketDataResult.style.display = 'block';
+            
+            fetch(`/api/market-data/${symbol}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
+                    // Store global values
+                    window.lastStockPrice = data.price;
+                    window.lastVolatility = data.volatility;
+                    window.lastDividendYield = data.dividend_yield;
+                    
+                    // Pre-fill market strike input with current price
+                    document.getElementById('market-strike').value = data.price;
+                    
+                    // Update market data display
+                    marketDataResult.innerHTML = `
+                        <strong>${symbol}</strong>: $${data.price.toFixed(2)}<br>
+                        Volatility: ${(data.volatility * 100).toFixed(2)}%<br>
+                        Dividend Yield: ${(data.dividend_yield * 100).toFixed(2)}%
+                    `;
+                })
+                .catch(error => {
+                    marketDataResult.textContent = `Error: ${error.message}`;
+                    marketDataResult.classList.remove('alert-info');
+                    marketDataResult.classList.add('alert-danger');
+                });
+        }
+        
+        function calculateOption(stockPrice, strikePrice, yearsToExpiration, riskFreeRate, volatility, dividendYield) {
+            const resultCard = document.getElementById('result-card');
+            
+            fetch('/api/price', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    stock_price: stockPrice,
+                    strike_price: strikePrice,
+                    years_to_expiration: yearsToExpiration,
+                    risk_free_rate: riskFreeRate,
+                    volatility: volatility,
+                    dividend_yield: dividendYield
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Update the UI with results
+                document.getElementById('call-price').textContent = `$${data.call_price.toFixed(2)}`;
+                document.getElementById('put-price').textContent = `$${data.put_price.toFixed(2)}`;
+                
+                // Greeks
+                document.getElementById('delta').textContent = data.greeks.delta.toFixed(4);
+                document.getElementById('gamma').textContent = data.greeks.gamma.toFixed(4);
+                document.getElementById('theta').textContent = data.greeks.theta.toFixed(4);
+                document.getElementById('vega').textContent = data.greeks.vega.toFixed(4);
+                document.getElementById('rho').textContent = data.greeks.rho.toFixed(4);
+                
+                // Model parameters
+                document.getElementById('d1-value').textContent = data.d1.toFixed(4);
+                document.getElementById('d2-value').textContent = data.d2.toFixed(4);
+                document.getElementById('nd1-value').textContent = data.N_d1.toFixed(4);
+                document.getElementById('nd2-value').textContent = data.N_d2.toFixed(4);
+                
+                // Timestamp
+                const timestamp = new Date(data.timestamp);
+                document.getElementById('timestamp').textContent = timestamp.toLocaleString();
+                
+                // Show the result card
+                resultCard.style.display = 'block';
+            })
+            .catch(error => {
+                alert(`Error calculating option prices: ${error.message}`);
+            });
+        }
+    </script>
+</body>
+</html>

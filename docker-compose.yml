@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # Nginx for reverse proxy and serving static files
+  nginx:
+    image: nginx:alpine
+    container_name: financial-tools-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./index.html:/usr/share/nginx/html/index.html
+    depends_on:
+      - optlt-web
+      - warrant-app
+    restart: unless-stopped
+
+  # OPTLT App (Long-term option pricing)
+  optlt-web:
+    build:
+      context: ./optlt
+      dockerfile: Dockerfile
+    container_name: optlt-web
+    expose:
+      - "5000"
+    environment:
+      - FLASK_ENV=production
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+    volumes:
+      - ./optlt:/app
+    restart: unless-stopped
+
+  # Redis for OPTLT app
+  redis:
+    image: redis:alpine
+    container_name: financial-tools-redis
+    expose:
+      - "6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # Celery worker for OPTLT app
+  celery_worker:
+    build:
+      context: ./optlt
+      dockerfile: Dockerfile
+    container_name: optlt-celery-worker
+    command: celery -A app.celery worker --loglevel=info
+    volumes:
+      - ./optlt:/app
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - optlt-web
+      - redis
+    restart: unless-stopped
+
+  # Warrant Pricing App
+  warrant-app:
+    build:
+      context: ./warrent
+      dockerfile: Dockerfile
+    container_name: warrant-app
+    expose:
+      - "8501"
+    volumes:
+      - ./warrent:/app
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  redis_data:
